@@ -68,7 +68,7 @@ Puppet::Type.newtype(:ini_setting) do
     defaultto(" = ")
   end
 
-  newproperty(:value) do
+  newproperty(:value, :array_matching => :all) do
     desc 'The value of the setting to be defined.'
 
     def should_to_s(newvalue)
@@ -83,6 +83,15 @@ Puppet::Type.newtype(:ini_setting) do
 
     def is_to_s(value)
       should_to_s(value)
+    end
+
+    def insync?(is)
+      if @resource[:value].is_a? Array and @resource[:value].size == 1
+        value = @resource[:value].first
+      else
+        value = @resource[:value]
+      end
+      (provider.value == value) ? true : false
     end
   end
 

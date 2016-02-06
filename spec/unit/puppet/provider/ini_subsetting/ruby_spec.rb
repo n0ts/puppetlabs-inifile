@@ -56,7 +56,7 @@ JAVA_ARGS="-XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/var/log/pe-puppetdb
       EOS
 )
     end
-    
+
     it "should modify an existing subsetting" do
       resource = Puppet::Type::Ini_subsetting.new(common_params.merge(
           :subsetting => '-Xmx', :value => '256m'))

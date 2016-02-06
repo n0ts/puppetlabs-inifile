@@ -156,7 +156,10 @@ module Util
 
           # write new settings, if there are any
           section.additional_settings.each_pair do |key, value|
-            fh.puts("#{' ' * (section.indentation || 0)}#{key}#{@key_val_separator}#{value}")
+            value = [value] if value.is_a? String
+            value.each do |v|
+              fh.puts("#{' ' * (section.indentation || 0)}#{key}#{@key_val_separator}#{v}")
+            end
           end
 
           if (whitespace_buffer.length > 0)
@@ -215,7 +218,12 @@ module Util
         if (line_num.nil? or match = @@SECTION_REGEX.match(line))
           return Section.new(name, start_line, end_line_num, settings, min_indentation)
         elsif (match = @@SETTING_REGEX.match(line))
-          settings[match[2]] = match[4]
+          if settings.key? match[2]
+            settings[match[2]] = settings[match[2]].split() if settings[match[2]].is_a? String
+            settings[match[2]] << match[4]
+          else
+            settings[match[2]] = match[4]
+          end
           indentation = match[1].length
           min_indentation = [indentation, min_indentation || indentation].min
         end
@@ -228,7 +236,11 @@ module Util
       (section.start_line..section.end_line).each do |line_num|
         if (match = @@SETTING_REGEX.match(lines[line_num]))
           if (match[2] == setting)
-            lines[line_num] = "#{match[1]}#{match[2]}#{match[3]}#{value}"
+            value = [value] if value.is_a? String
+            value.each do |v|
+              lines[line_num] = "#{match[1]}#{match[2]}#{match[3]}#{v}"
+              line_num += 1
+            end
           end
         end
       end
@@ -249,18 +261,18 @@ module Util
     end
 
     def lines
-        @lines ||= IniFile.readlines(@path)
+      @lines ||= IniFile.readlines(@path)
     end
 
     # This is mostly here because it makes testing easier--we don't have
     #  to try to stub any methods on File.
     def self.readlines(path)
-        # If this type is ever used with very large files, we should
-        #  write this in a different way, using a temp
-        #  file; for now assuming that this type is only used on
-        #  small-ish config files that can fit into memory without
-        #  too much trouble.
-        File.readlines(path)
+      # If this type is ever used with very large files, we should
+      #  write this in a different way, using a temp
+      #  file; for now assuming that this type is only used on
+      #  small-ish config files that can fit into memory without
+      #  too much trouble.
+      File.readlines(path)
     end
 
     # This utility method scans through the lines for a section looking for
@@ -290,7 +302,11 @@ module Util
     def insert_inline_setting_line(result, section, setting, value)
       line_num = result[:line_num]
       match = result[:match]
-      lines.insert(line_num + 1, "#{' ' * (section.indentation || 0 )}#{setting}#{match[4]}#{value}")
+      value = [value] if value.is_a? String
+      value.each do |v|
+        lines.insert(line_num + 1, "#{' ' * (section.indentation || 0 )}#{setting}#{match[4]}#{v}")
+        line_num += 1
+      end
     end
 
     # Utility method; given a section index (index into the @section_names

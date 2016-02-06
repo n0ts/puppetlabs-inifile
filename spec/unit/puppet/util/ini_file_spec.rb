@@ -284,4 +284,22 @@ EOS
       subject.get_value("global", "security").should eq 'ads'
     end
   end
+
+  context 'Configuration with same key' do
+    let(:sample_content) do
+      template = <<-EOS
+[section1]
+foo=foovalue
+foo=foo2value
+
+bar = barvalue
+bar = bar2value
+EOS
+      template.split("\n")
+    end
+    it "should parse the correct number of sections" do
+      subject.get_value("section1", "foo").should eq ['foovalue', 'foo2value']
+      subject.get_value("section1", "bar").should eq ['barvalue', 'bar2value']
+    end
+  end
 end
