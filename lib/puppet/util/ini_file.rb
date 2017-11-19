@@ -5,12 +5,15 @@ module Puppet
 module Util
   class IniFile
 
-    def initialize(path, key_val_separator = ' = ', section_prefix = '[', section_suffix = ']')
+    def initialize(path, key_val_separator = ' = ', section_prefix = '[', section_suffix = ']',
+                   indent_char = ' ', indent_width = nil)
 
       k_v_s = key_val_separator =~ /^\s+$/ ? ' ' : key_val_separator.strip
 
       @section_prefix = section_prefix
       @section_suffix = section_suffix
+      @indent_char = indent_char
+      @indent_width = indent_width ? indent_width.to_i : nil
 
       @@SECTION_REGEX = section_regex
       @@SETTING_REGEX = /^(\s*)([^#;\s]|[^#;\s].*?[^\s#{k_v_s}])(\s*#{k_v_s}[ \t]*)(.*)\s*$/
@@ -63,7 +66,20 @@ module Util
       end
     end
 
-    def set_value(section_name, setting, value)
+    def set_value(*args)
+      case args.size
+      when 3
+        # Backwards compatible set_value function, See MODULES-5172
+        (section_name, setting, value) = args
+      when 4
+        (section_name, setting, separator, value) = args
+      end
+
+      complete_setting = {
+        :setting => setting,
+        :separator => separator,
+        :value => value
+      }
       unless (@sections_hash.has_key?(section_name))
         add_section(Section.new(section_name, nil, nil, nil, nil))
       end
@@ -83,7 +99,7 @@ module Util
 
         # If we get here then we found a commented line, so we
         # call "insert_inline_setting_line" to update the lines array
-        insert_inline_setting_line(result, section, setting, value)
+        insert_inline_setting_line(result, section, complete_setting)
 
         # Then, we need to tell the setting object that we hacked
         # in an inline setting
@@ -134,6 +150,11 @@ module Util
           end
 
           if ! section.is_new_section?
+            # don't add empty sections
+            if section.empty? and ! section.is_global?
+              next
+            end
+
             # write all of the pre-existing settings
             (section.start_line..section.end_line).each do |line_num|
               line = lines[line_num]
@@ -299,7 +320,7 @@ module Util
     # This utility method is for inserting a line into the existing
     # lines array.  The `result` argument is expected to be in the
     # format of the return value of `find_commented_setting`.
-    def insert_inline_setting_line(result, section, setting, value)
+    def insert_inline_setting_line(result, section, complete_setting)
       line_num = result[:line_num]
       match = result[:match]
       value = [value] if value.is_a? String

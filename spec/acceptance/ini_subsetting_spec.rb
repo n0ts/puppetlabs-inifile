@@ -22,10 +22,14 @@ describe 'ini_subsetting resource' do
     end
 
     describe file(path) do
-      it { should be_file }
-      its(:content) {
-        should match content
+      it { is_expected.to be_file }
+
+      describe '#content' do
+        subject { super().content }
+        it {
+        is_expected.to match content
       }
+      end
     end
   end
 
@@ -43,7 +47,7 @@ describe 'ini_subsetting resource' do
     end
 
     describe file(path) do
-      it { should_not be_file }
+      it { is_expected.not_to be_file }
     end
   end
 
@@ -75,10 +79,14 @@ describe 'ini_subsetting resource' do
       end
 
       describe file("#{tmpdir}/ini_subsetting.ini") do
-        it { should be_file }
-        its(:content) {
-          should match /\[one\]\nkey = alphabet betatrons/
+        it { is_expected.to be_file }
+
+        describe '#content' do
+          subject { super().content }
+          it {
+          is_expected.to match /\[one\]\nkey = alphabet betatrons/
         }
+        end
       end
     end
 
@@ -107,12 +115,16 @@ describe 'ini_subsetting resource' do
       end
 
       describe file("#{tmpdir}/ini_subsetting.ini") do
-        it { should be_file }
-        its(:content) {
-          should match /\[one\]/
-          should match /key = betatrons/
-          should_not match /alphabet/
+        it { is_expected.to be_file }
+
+        describe '#content' do
+          subject { super().content }
+          it {
+          is_expected.to match /\[one\]/
+          is_expected.to match /key = betatrons/
+          is_expected.not_to match /alphabet/
         }
+        end
       end
     end
   end
@@ -153,6 +165,40 @@ describe 'ini_subsetting resource' do
     end
   end
 
+  describe 'subsetting_key_val_separator' do
+    {
+        ''                                        => /two = twinethree foobar/,
+        "subsetting_key_val_separator => ':',"    => /two = twine:three foo:bar/,
+        "subsetting_key_val_separator => '-',"    => /two = twine-three foo-bar/,
+    }.each do |parameter, content|
+      context "with '#{parameter}' makes '#{content}'" do
+        pp = <<-EOS
+        ini_subsetting { "with #{parameter} makes #{content}":
+          ensure     => 'present',
+          section    => 'one',
+          setting    => 'two',
+          subsetting => 'twine',
+          value      => 'three',
+          path       => "#{tmpdir}/subsetting_key_val_separator.ini",
+          before     => Ini_subsetting['foobar'],
+          #{parameter}
+        }
+        ini_subsetting { "foobar":
+          ensure     => 'present',
+          section    => 'one',
+          setting    => 'two',
+          subsetting => 'foo',
+          value      => 'bar',
+          path       => "#{tmpdir}/subsetting_key_val_separator.ini",
+          #{parameter}
+        }
+        EOS
+
+        it_behaves_like 'has_content', "#{tmpdir}/subsetting_key_val_separator.ini", pp, content
+      end
+    end
+  end
+
   describe 'quote_char' do
     {
         ['-Xmx']         => /args=""/,
@@ -189,10 +235,14 @@ describe 'ini_subsetting resource' do
         end
 
         describe file("#{tmpdir}/ini_subsetting.ini") do
-          it { should be_file }
-          its(:content) {
-            should match content
+          it { is_expected.to be_file }
+
+          describe '#content' do
+            subject { super().content }
+            it {
+            is_expected.to match content
           }
+          end
         end
       end
     end
@@ -230,6 +280,71 @@ describe 'ini_subsetting resource' do
           expect(res.stdout).not_to match(i[:value]) unless (i[:show_diff] == true)
 
         end
+      end
+    end
+  end
+
+  describe 'insert types:' do
+    [
+        {
+            :insert_type => :start,
+            :content     => /d a b c/,
+        },
+        {
+            :insert_type => :end,
+            :content     => /a b c d/,
+        },
+        {
+            :insert_type  => :before,
+            :insert_value => 'c',
+            :content      => /a b d c/,
+        },
+        {
+            :insert_type  => :after,
+            :insert_value => 'a',
+            :content      => /a d b c/,
+        },
+        {
+            :insert_type  => :index,
+            :insert_value => 2,
+            :content      => /a b d c/,
+        }
+    ].each do |params|
+      context "with '#{params[:insert_type]}' makes '#{params[:content]}'" do
+        pp = <<-EOS
+        ini_subsetting { "a":
+          ensure     => present,
+          section    => 'one',
+          setting    => 'two',
+          subsetting => 'a',
+          path       => "#{tmpdir}/insert_types.ini",
+        } ->
+        ini_subsetting { "b":
+          ensure     => present,
+          section    => 'one',
+          setting    => 'two',
+          subsetting => 'b',
+          path       => "#{tmpdir}/insert_types.ini",
+        } ->
+        ini_subsetting { "c":
+          ensure     => present,
+          section    => 'one',
+          setting    => 'two',
+          subsetting => 'c',
+          path       => "#{tmpdir}/insert_types.ini",
+        } ->
+        ini_subsetting { "insert makes #{params[:content]}":
+          ensure       => present,
+          section      => 'one',
+          setting      => 'two',
+          subsetting   => 'd',
+          path         => "#{tmpdir}/insert_types.ini",
+          insert_type  => '#{params[:insert_type]}',
+          insert_value => '#{params[:insert_value]}',
+        }
+        EOS
+
+        it_behaves_like 'has_content', "#{tmpdir}/insert_types.ini", pp, params[:content]
       end
     end
   end
