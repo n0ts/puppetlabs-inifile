@@ -95,7 +95,7 @@ Puppet::Type.newtype(:ini_setting) do
       else
         value = @resource[:value]
       end
-      (provider.value == value) ? true : false
+      provider.value == value
     end
   end
 

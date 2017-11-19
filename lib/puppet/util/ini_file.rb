@@ -179,7 +179,7 @@ module Util
           section.additional_settings.each_pair do |key, value|
             value = [value] if value.is_a? String
             value.each do |v|
-              fh.puts("#{' ' * (section.indentation || 0)}#{key}#{@key_val_separator}#{v}")
+              fh.puts("#{@indent_char * (@indent_width || section.indentation || 0)}#{key}#{@key_val_separator}#{v}")
             end
           end
 
@@ -323,9 +323,10 @@ module Util
     def insert_inline_setting_line(result, section, complete_setting)
       line_num = result[:line_num]
       match = result[:match]
-      value = [value] if value.is_a? String
-      value.each do |v|
-        lines.insert(line_num + 1, "#{' ' * (section.indentation || 0 )}#{setting}#{match[4]}#{v}")
+      s = complete_setting
+      s[:value] = [s[:value]] if s[:value].is_a? String
+      s[:value].each do |v|
+        lines.insert(line_num + 1, "#{@indent_char * (@indent_width || section.indentation || 0 )}#{s[:setting]}#{s[:separator]}#{v}")
         line_num += 1
       end
     end
