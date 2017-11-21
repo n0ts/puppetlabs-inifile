@@ -177,6 +177,7 @@ module Util
 
           # write new settings, if there are any
           section.additional_settings.each_pair do |key, value|
+            next if value.nil?
             value = [value] if value.is_a? String
             value.each do |v|
               fh.puts("#{@indent_char * (@indent_width || section.indentation || 0)}#{key}#{@key_val_separator}#{v}")
@@ -257,6 +258,7 @@ module Util
       (section.start_line..section.end_line).each do |line_num|
         if (match = @@SETTING_REGEX.match(lines[line_num]))
           if (match[2] == setting)
+            next if value.nil?
             value = [value] if value.is_a? String
             value.each do |v|
               lines[line_num] = "#{match[1]}#{match[2]}#{match[3]}#{v}"
@@ -324,6 +326,7 @@ module Util
       line_num = result[:line_num]
       match = result[:match]
       s = complete_setting
+      return if s[:value].nil?
       s[:value] = [s[:value]] if s[:value].is_a? String
       s[:value].each do |v|
         lines.insert(line_num + 1, "#{@indent_char * (@indent_width || section.indentation || 0 )}#{s[:setting]}#{s[:separator]}#{v}")

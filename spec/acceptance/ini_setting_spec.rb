@@ -298,7 +298,7 @@ describe 'ini_setting resource' do
     [ {:value => "initial_value", :matcher => "created", :show_diff => true},
       {:value => "public_value", :matcher => /initial_value.*public_value/, :show_diff => true},
       {:value => "secret_value", :matcher => /redacted sensitive information.*redacted sensitive information/, :show_diff => false},
-      {:value => "md5_value", :matcher => /{md5}881671aa2bbc680bc530c4353125052b.*{md5}ed0903a7fa5de7886ca1a7a9ad06cf51/, :show_diff => :md5}
+      {:value => "md5_value", :matcher => /{md5}881671aa2bbc680bc530c4353125052b.*{md5}9b8ae6805cc089ee69fe23b7aa3628b8/, :show_diff => :md5}
     ].each do |i|
       context "show_diff => #{i[:show_diff]}" do
         pp = <<-EOS
